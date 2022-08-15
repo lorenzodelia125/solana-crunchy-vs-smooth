@@ -14,10 +14,8 @@ declare_id!("3EAMBn9y34UdRNasRhuHNCGGD5Cdzyd79w5t1jBxRJeK");
 pub mod crunchy_vs_smooth {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> ProgramResult {
-        ctx.accounts.vote_account.crunchy = 0;
-        ctx.accounts.vote_account.smooth = 0;
-
+    pub fn initialize(ctx: Context<Initialize>, bump: u8) -> ProgramResult {
+        ctx.accounts.vote_account.bump = bump;
         Ok(())
     }
 
@@ -37,9 +35,10 @@ pub mod crunchy_vs_smooth {
 // opzioni per effettuare una corretta validazione) e affida ad Anchor
 // il compito di serializzare e deserializzare tutti i dati che transitano
 #[derive(Accounts)]
+#[instruction(bump: u8)]
 pub struct Initialize<'info> {
-    #[account(init, payer = user, space = 16 + 16)]
-    pub vote_account: Account<'info, VoteAccount>,
+    #[account(init, payer = user, seeds = [b"vote_account".as_ref()], bump, space = 16 + 16)]
+    pub vote_account: Account<'info, VotingState>,
 
     #[account(mut)]
     pub user: Signer<'info>,
@@ -49,12 +48,14 @@ pub struct Initialize<'info> {
 
 #[derive(Accounts)]
 pub struct Vote<'info> {
-    #[account(mut)]
-    pub vote_account: Account<'info, VoteAccount>,
+    #[account(mut, seeds = [b"vote_account".as_ref()], bump)]
+    pub vote_account: Account<'info, VotingState>,
 }
 
 #[account]
-pub struct VoteAccount {
+#[derive(Default)]
+pub struct VotingState {
+    pub bump: u8,
     pub crunchy: u64,
     pub smooth: u64,
 }

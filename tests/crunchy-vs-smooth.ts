@@ -20,24 +20,26 @@ describe("crunchy-vs-smooth", () => {
   // di concentrarsi sul test del program senza perdere tempo a fare ulteriori
   // configurazioni inutili
 
-  const voteAccount = anchor.web3.Keypair.generate();
+  const seed: Buffer = Buffer.from("vote_account");
 
   it("Initializes with 0 votes for crunchy and smooth", async () => {
     // Add your test here.
+    const [voteAccount, bump] = await anchor.web3.PublicKey.findProgramAddress(
+      [seed],
+      program.programId
+    );
+
     const tx = await program.methods
-      .initialize()
+      .initialize(bump)
       .accounts({
-        voteAccount: voteAccount.publicKey,
+        voteAccount,
         user: provider.wallet.publicKey,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
-      .signers([voteAccount])
       .rpc();
     console.log("Your transaction signature", tx);
 
-    const account = await program.account.voteAccount.fetch(
-      voteAccount.publicKey
-    );
+    const account = await program.account.votingState.fetch(voteAccount);
 
     console.log("Crunchy: ", account.crunchy.toString());
     console.log("Smooth: ", account.smooth.toString());
@@ -49,17 +51,20 @@ describe("crunchy-vs-smooth", () => {
   it("Votes correctly for crunches", async () => {
     console.log("Testing voteCrunchy...");
 
+    const [voteAccount] = await anchor.web3.PublicKey.findProgramAddress(
+      [seed],
+      program.programId
+    );
+
     const tx = await program.methods
       .voteCrunchy()
       .accounts({
-        voteAccount: voteAccount.publicKey,
+        voteAccount: voteAccount,
       })
       .rpc();
     console.log("Your transaction signature", tx);
 
-    const account = await program.account.voteAccount.fetch(
-      voteAccount.publicKey
-    );
+    const account = await program.account.votingState.fetch(voteAccount);
 
     console.log("Crunchy: ", account.crunchy.toString());
     console.log("Smooth: ", account.smooth.toString());
@@ -71,17 +76,20 @@ describe("crunchy-vs-smooth", () => {
   it("Votes correctly for smooth", async () => {
     console.log("Testing voteSmooth...");
 
+    const [voteAccount] = await anchor.web3.PublicKey.findProgramAddress(
+      [seed],
+      program.programId
+    );
+
     const tx = await program.methods
       .voteSmooth()
       .accounts({
-        voteAccount: voteAccount.publicKey,
+        voteAccount,
       })
       .rpc();
     console.log("Your transaction signature", tx);
 
-    const account = await program.account.voteAccount.fetch(
-      voteAccount.publicKey
-    );
+    const account = await program.account.votingState.fetch(voteAccount);
 
     console.log("Crunchy: ", account.crunchy.toString());
     console.log("Smooth: ", account.smooth.toString());
